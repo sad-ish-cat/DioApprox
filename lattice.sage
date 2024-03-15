@@ -5,3 +5,15 @@ def generate_basises(n):
 	candidates = [B for B in candidates if (B[0][0]> B[0][1] and B[1][0] < B[1][1])]
 	
 	return candidates
+	
+	
+
+
+def count_bases(indices = [3, 7, 11, 19, 23, 31, 43, 47]):
+	basis_count = []
+	
+
+	for i in indices:
+		basis_count.append(len(generate_basises(i)))
+	
+	return basis_count
