@@ -49,9 +49,6 @@ def next_lattice(v1, v2, move, bases):
 		v2_new = [v1[0]+v2[0],v1[1]+v2[1]]
 		
 		
-	is_w_best = False
-	left_right = ""
-	
 	sequence = find_left_right_relative([v2_new,[],v1_new], max_steps = 100)
 	
 	w1 = create_data_from_left_right(sequence)[2]
