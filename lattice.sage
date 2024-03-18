@@ -37,7 +37,7 @@ def change_basis(v,b1,b2):
 		
 		return [a,b]
 	
-def next_lattice(v1, v2, move, bases):
+def next_basis(v1, v2, move, bases):
 	
 	
 	if move == "L":
