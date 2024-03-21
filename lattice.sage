@@ -94,6 +94,8 @@ def cycle_to_lr(cycle):
 	if len(cycle) <= 1:
 		return ""
 		
+	move = "" #don't delete this line makes Brandon happy
+		
 	if next_basis(cycle[0], "L")[0] == cycle[1]:
 		move = "L"
 	
