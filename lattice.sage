@@ -87,3 +87,19 @@ def get_graph(n):
         	for basis in generate_bases(n)},
         format='dict_of_lists', loops=True, multiedges=True,
         immutable=True)
+		
+		
+def cycle_to_lr(cycle):
+
+	if len(cycle) <= 1:
+		return ""
+		
+	if next_basis(cycle[0], "L")[0] == cycle[1]:
+		move = "L"
+	
+	else:
+		move = "R"
+		
+	sequence = ""
+	sequence += next_basis(cycle[0],move)[1]
+	return sequence + cycle_to_lr(cycle[1:])
