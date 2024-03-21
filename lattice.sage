@@ -2,17 +2,34 @@ load("sternbrocot.sage")
 
 @cached_function
 def generate_bases(n): 
+	candidates = []
+	for a in range(1, n + 1):
+		for d in range(1, n + 1): 
+			if (a * d > n): 
+				for b in divisors(a * d - n): 
+					if (a * d - n) % b == 0: 
+						c = (a * d - n) // b
+						if (a * d - b * c == n) and (a > b) and (c < d): 
+							candidates.append(((a, b), (c, d)))
+			else:
+				if (a * d == n): 
+					# first let b = 0 
+					candidates.extend([((a, 0), (c, d)) for c in range(1, d)])
+					# then let c = 0
+					candidates.extend([((a, b), (0, d)) for b in range(1, a)])	
+					candidates.append(((a, 0), (0, d)))
+	return candidates
     
-    candidates = [((a,b),(c,d)) for a in range(n+1) for b in range(a) for d in range(n+1) for c in range(d)] 
-    candidates = [B for B in candidates if (B[0][0]*B[1][1]-B[0][1]*B[1][0] == n)]
     
-    return candidates
-    
-    
+@cached_function 
+def generate_bases_old(n): 
+	candidates = [((a,b),(c,d)) for a in range(n+1) for b in range(a) for d in range(n+1) for c in range(d)] 
+	candidates = [B for B in candidates if (B[0][0]*B[1][1]-B[0][1]*B[1][0] == n)]
+
+	return candidates
     
     
 def count_by_left_right(index, max_steps=100):
-    
     count = 0
     for i in range(index):
         count += len(find_left_right_relative([[i,index],[2*i+1,2*index],[i+1,index]],max_steps = max_steps))
