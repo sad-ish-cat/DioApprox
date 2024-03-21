@@ -2,12 +2,14 @@ load("sternbrocot.sage")
 
 @cached_function
 def generate_bases(n): 
-    
+	
     candidates = [((a,b),(c,d)) for a in range(n+1) for b in range(a) for d in range(n+1) for c in range(d)] 
     candidates = [B for B in candidates if (B[0][0]*B[1][1]-B[0][1]*B[1][0] == n)]
     
     return candidates
-    
+	
+	
+
     
     
     
@@ -70,3 +72,19 @@ def get_graph(n):
         	for basis in generate_bases(n)},
         format='dict_of_lists', loops=True, multiedges=True,
         immutable=True)
+		
+		
+def cycle_to_lr(cycle):
+
+	if len(cycle) <= 1:
+		return ""
+		
+	if next_basis(cycle[0], "L")[0] == cycle[1]:
+		move = "L"
+	
+	else:
+		move = "R"
+		
+	sequence = ""
+	sequence += next_basis(cycle[0],move)[1]
+	return sequence + cycle_to_lr(cycle[1:])
