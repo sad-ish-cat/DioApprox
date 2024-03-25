@@ -139,26 +139,44 @@ def to_continued_fraction(lrseq):
 		
 		seq = seq[num:]
 	
-	return continued_frac
+	if len(continued_frac) == 1:
+		return [Infinity]
+	if len(continued_frac) % 2 == 0:
+	    return continued_frac
+	return continued_frac[1:-1] + [continued_frac[0] + continued_frac[-1]]
 	
 	
 	
 def approx_value(ctdfrac):
 	
+	biggest = max(ctdfrac)
+	
+	if biggest == Infinity:
+		return Infinity
+	
 	rotations = []
 	for i in range(len(ctdfrac)):
-		rotations.append(ctdfrac[i:] + ctdfrac[:i])
+		if ctdfrac[i] >= biggest - 1:
+			rotations.append(ctdfrac[i:] + ctdfrac[:i])
 		
 	largest = 0
 	
-	
 	for rot in rotations:
-		approx = continued_fraction([(0),(rot[::-1][1:])]) + ... #not sure how create periodic continued fraction continued_fraction() 
-		if approx.value() > largest:
+		approx = continued_fraction([[rot[0]],rot[1:] + [rot[0]]]).value() +\
+			continued_fraction([[0], rot[::-1]]).value();
+		if approx > largest:
 			largest = approx
 			
-	return largrest
-		
+	return largest
 	
 	
-	
+def list_cycle_approx(n, max_length = 5, sort = True):
+
+	cycles = list_cycles_lr(n, max_length);
+	ret = [
+		[N(max(approx_value(to_continued_fraction(string)) for string in cycle))] + list(cycle)
+	    for cycle in cycles
+	]
+	if sort:
+		ret.sort()
+	return ret
