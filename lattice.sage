@@ -107,14 +107,58 @@ def cycle_to_lr(cycle):
 	return (moves, sequence)
 
 def list_cycles_lr(n, max_length = 5):
+
 	g = get_graph(n);
 	g.remove_loops();
 	return [cycle_to_lr(c) for c in g.all_cycles_iterator(max_length = max_length)]
 	
+	
+def count_lr_consecutive(lrseq):
+	
+	seq = list(lrseq)
+	if (len(seq) == 1):
+		return 1
+	elif (seq[0] == seq[1]):
+		return 1 + count_lr_consecutive(lrseq[1:])
+	else:
+		return 1
+	
+	
 def to_continued_fraction(lrseq):
-	# Exercise
-	pass
+
+	if lrseq == "":
+		return []
+		
+	seq = lrseq
+	continued_frac = []
+	
+	while(len(seq)>0):
+	
+		num = count_lr_consecutive(seq)
+		continued_frac.append(num)
+		
+		seq = seq[num:]
+	
+	return continued_frac
+	
+	
 	
 def approx_value(ctdfrac):
-	# Exercise
-	pass
+	
+	rotations = []
+	for i in range(len(ctdfrac)):
+		rotations.append(ctdfrac[i:] + ctdfrac[:i])
+		
+	largest = 0
+	
+	
+	for rot in rotations:
+		approx = continued_fraction([(0),(rot[::-1][1:])]) + ... #not sure how create periodic continued fraction continued_fraction() 
+		if approx.value() > largest:
+			largest = approx
+			
+	return largrest
+		
+	
+	
+	
