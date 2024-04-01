@@ -89,30 +89,30 @@ def get_graph(n):
 		immutable=False)
 		
 		
-def cycle_to_lr(cycle):
+def path_to_lr(path):
 
-	if len(cycle) <= 1:
+	if len(path) == 0:
 		return ""
 	
 	moves = ""
 	sequence = ""
 	
-	for i in range(0, len(cycle) - 1):
-		if next_basis(cycle[i], "L")[0] == cycle[i+1]:
+	for i in range(0, len(path) - 1):
+		if next_basis(path[i], "L")[0] == path[i+1]:
 			move = "L"
 		else:
 			move = "R"
 		moves += move
-		sequence += next_basis(cycle[i],move)[1]
+		sequence += next_basis(path[i],move)[1]
 	return (moves, sequence)
 
 def list_cycles_lr(n, max_length = 5):
 
 	g = get_graph(n);
 	g.remove_loops();
-	return [cycle_to_lr(c) for c in g.all_cycles_iterator(max_length = max_length)]
+	return [path_to_lr(c) for c in g.all_cycles_iterator(max_length = max_length)]
 	
-	
+# Helper function for to_continued_fraction
 def count_lr_consecutive(lrseq):
 	
 	seq = list(lrseq)
@@ -124,7 +124,7 @@ def count_lr_consecutive(lrseq):
 		return 1
 	
 	
-def to_continued_fraction(lrseq):
+def to_continued_fraction(lrseq, cyclic=False):
 
 	if lrseq == "":
 		return []
@@ -139,6 +139,8 @@ def to_continued_fraction(lrseq):
 		
 		seq = seq[num:]
 	
+	if not(cyclic):
+		return continued_frac
 	if len(continued_frac) == 1:
 		return [Infinity]
 	if len(continued_frac) % 2 == 0:
@@ -174,9 +176,61 @@ def list_cycle_approx(n, max_length = 5, sort = True):
 
 	cycles = list_cycles_lr(n, max_length);
 	ret = [
-		[N(max(approx_value(to_continued_fraction(string)) for string in cycle))] + list(cycle)
+		[N(max(approx_value(to_continued_fraction(string, cyclic = True))
+		   for string in cycle))] + list(cycle)
 	    for cycle in cycles
 	]
 	if sort:
 		ret.sort()
 	return ret
+	
+def min_lambda(ctdfrac):
+	# ctdfrac = to_continued_fraction(lrseq);
+	
+	n = len(ctdfrac)
+	
+	if n == 0:
+		return 0
+	
+	biggest = max(ctdfrac)
+	
+	if biggest == Infinity:
+		return Infinity
+	
+	largest = 0
+	for i in range(len(ctdfrac)):
+		if ctdfrac[i] >= biggest - 1:
+			# print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
+			approx = continued_fraction(ctdfrac[i:n-((n-i-1)%2)]).value() +\
+			continued_fraction([0] + ctdfrac[i-1:-((i-1)%2):-1]).value();
+			if approx > largest:
+				largest = approx
+			
+	return largest
+	
+def find_good_paths(n, lambda_limit, max_length = 5):
+	
+	graph = get_graph(n)
+	prev = [[node] for node in graph.vertices()] # k = 0
+	current = []
+	for k in [1..max_length]:
+		for oldpath in prev:
+			vtx = oldpath[-1];
+			for edge in graph.outgoing_edge_iterator(vtx,labels=False):
+				newpath = oldpath + [edge[1]];
+				
+				# Check head segment
+				if newpath[1:] in prev:
+					xi_moves, nxi_moves = path_to_lr(newpath)
+					if (min_lambda(to_continued_fraction(xi_moves)) <= lambda_limit
+						and min_lambda(to_continued_fraction(nxi_moves)) <= lambda_limit):
+							current += [newpath]
+		prev = current
+		print(len(prev), "good paths of length", k)
+		current = []
+	return prev
+	
+	# Possible optimizations:
+	# - Replace prev by a set
+	# - Cache LR-sequences
+	# - Cache next_basis
