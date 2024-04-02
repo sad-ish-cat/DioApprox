@@ -255,23 +255,23 @@ def min_lambda_new(ctdfrac):
 def find_good_paths(n, lambda_limit, max_length = 5):
 	
 	graph = get_graph(n)
-	prev = [[node] for node in graph.vertices()] # k = 0
-	current = []
+	prev = set([(node, ) for node in graph.vertices()]) # k = 0
+	current = set()
 	for k in [1..max_length]:
 		for oldpath in prev:
 			vtx = oldpath[-1];
 			for edge in graph.outgoing_edge_iterator(vtx,labels=False):
-				newpath = oldpath + [edge[1]];
+				newpath = oldpath + (edge[1],);
 				
 				# Check head segment
 				if newpath[1:] in prev:
 					xi_moves, nxi_moves = path_to_lr(newpath)
 					if (min_lambda_new(to_continued_fraction(xi_moves)) <= lambda_limit
 						and min_lambda_new(to_continued_fraction(nxi_moves)) <= lambda_limit):
-							current += [newpath]
+							current.add(newpath)
 		prev = current
 		print(len(prev), "good paths of length", k)
-		current = []
+		current = set()
 	return prev
 	
 	# Possible optimizations:
