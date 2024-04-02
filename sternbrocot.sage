@@ -82,10 +82,11 @@ def find_left_right_dec (dec, root_data = [[0,1],[1,1],[1,0]], max_steps = 10):
 	if (root_data[1][0]/root_data[1][1]) < dec:
 		return "R" + find_left_right_dec(dec, [root_data[1],[root_data[2][0]+root_data[1][0],root_data[2][1]+root_data[1][1]],root_data[2]], max_steps - 1)
 		
+		
 # This will return the data found by traversing a reference tree by the given LR sequence
 # left_right_sequence - str - String containing the letters L and R
 # root_data - [[a, b], [c, d], [e, f]] a,b,c,d,e,f int - node data for the start of the tree
-def create_data_from_left_right (left_right_sequence, root_data = [[0,1],[1,1],[1,0]]):
+def create_data_from_left_right_old (left_right_sequence, root_data = [[0,1],[1,1],[1,0]]):
 
 	letters = list(left_right_sequence)
 	if len(letters) == 0:
@@ -96,6 +97,29 @@ def create_data_from_left_right (left_right_sequence, root_data = [[0,1],[1,1],[
 	
 	elif letters[0] == "R":
 		return create_data_from_left_right(left_right_sequence[1:], [root_data[1],[root_data[2][0]+root_data[1][0],root_data[2][1]+root_data[1][1]],root_data[2]])
+		
+def create_data_from_left_right (left_right_sequence, root_data = [[0,1],[1,1],[1,0]]):
+
+	letters = list(left_right_sequence)
+	
+	output_data = root_data
+	
+	for letter in letters:
+		if letter == "L":
+			output_data = [output_data[0],[output_data[0][0]+output_data[1][0],output_data[0][1]+output_data[1][1]],output_data[1]]
+		elif letter == "R":
+			output_data = [output_data[1],[output_data[2][0]+output_data[1][0],output_data[2][1]+output_data[1][1]],output_data[2]]
+	
+	return output_data
+	
+	
+def create_number_from_left_right (left_right_sequence, root_data = [[0,1],[1,1],[1,0]]):
+	
+	if left_right_sequence == "":
+		return 0
+	
+	output_data = create_data_from_left_right(left_right_sequence, root_data = root_data)
+	return output_data[1][0]/output_data[1][1]
 		
 # Helper function for find_left_right_relative, returns true if the interval corresponding to A is a subset of the one corresponding to B
 def is_subset(A, B):
