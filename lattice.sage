@@ -30,7 +30,7 @@ def generate_bases_old(n):
 def count_by_left_right(index, max_steps=100):
 	count = 0
 	for i in range(index):
-		count += len(find_left_right_relative([[i,index],[],[i+1,index]],max_steps = max_steps))
+		count += len(find_left_right_relative(((i,index),(),(i+1,index)),max_steps = max_steps))
 	return count
 		
 		
@@ -38,7 +38,8 @@ def count_by_left_right(index, max_steps=100):
 def test_cases(indices = []):
 	
 	for i in indices:
-		if not (count_by_left_right(i) == len(generate_bases(i))):
+		if not (count_by_left_right(i,max_steps=(max(indices)+10)) == len(generate_bases(i))):
+			print(i)
 			return False
 	return True
 			
@@ -57,16 +58,17 @@ def next_basis(old, move, max_steps = 100):
 	
 	v1, v2 = old;
 	
+	
+	
 	if move == "L":
-		v1_new = [v1[0]+v2[0],v1[1]+v2[1]]
+		v1_new = (v1[0]+v2[0],v1[1]+v2[1])
 		v2_new = v2
 		
 	if move == "R":
 		v1_new = v1
-		v2_new = [v1[0]+v2[0],v1[1]+v2[1]]
+		v2_new = (v1[0]+v2[0],v1[1]+v2[1])
 		
-		
-	sequence = find_left_right_relative([v2_new,[],v1_new], max_steps = max_steps)
+	sequence = find_left_right_relative((v2_new,(),v1_new), max_steps = max_steps)
 	
 	w1 = create_data_from_left_right(sequence)[2]
 	w2 = create_data_from_left_right(sequence)[0]
@@ -89,7 +91,7 @@ def get_graph(n):
 		format='dict_of_lists', loops=True, multiedges=True,
 		immutable=False)
 		
-	
+@cached_function
 def path_to_lr(path):
 
 	if len(path) == 0:
@@ -98,13 +100,17 @@ def path_to_lr(path):
 	moves = ""
 	sequence = ""
 	
+	
+	
 	for i in range(0, len(path) - 1):
-		if next_basis(path[i], "L")[0] == path[i+1]:
-			move = "L"
+		next_basis_l = next_basis(path[i], "L")
+		if next_basis_l[0] == path[i+1]:
+			moves += "L"
+			sequence += next_basis_l[1]
 		else:
-			move = "R"
-		moves += move
-		sequence += next_basis(path[i],move)[1]
+			moves += "R"
+			sequence += next_basis(path[i], "R")[1]
+		
 	return (moves, sequence)
 
 def list_cycles_lr(n, max_length = 5):
@@ -149,7 +155,8 @@ def to_continued_fraction(lrseq, cyclic=False):
 	if len(continued_frac) % 2 == 0:
 	    return continued_frac
 	return continued_frac[1:-1] + [continued_frac[0] + continued_frac[-1]]
-	
+
+@cached_function
 def to_lr_seq(ctdfrac):
 	
 	lr_seq = ""
@@ -223,11 +230,12 @@ def min_lambda(ctdfrac):
 			
 	return largest
 
+@cached_function
 def min_lambda_new(ctdfrac):
 
 
 	
-	lr_seq = to_lr_seq(ctdfrac)
+	lr_seq = to_lr_seq(tuple(ctdfrac))
 	
 	n = len(ctdfrac)
 	
@@ -243,8 +251,8 @@ def min_lambda_new(ctdfrac):
 	for i in range(len(ctdfrac)):
 		if ctdfrac[i] >= biggest - 1: 
 			#print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
-			approx = create_number_from_left_right(to_lr_seq(ctdfrac[i:n-((n-i-1)%2)])) +\
-			create_number_from_left_right(to_lr_seq([0] + ctdfrac[i-1:-((i-1)%2):-1]));
+			approx = create_number_from_left_right(to_lr_seq(tuple(ctdfrac[i:n-((n-i-1)%2)]))) +\
+			create_number_from_left_right(to_lr_seq(tuple((0,) + ctdfrac[i-1:-((i-1)%2):-1])));
 			if approx > largest:
 				largest = approx
 			
@@ -266,8 +274,8 @@ def find_good_paths(n, lambda_limit, max_length = 5):
 				# Check head segment
 				if newpath[1:] in prev:
 					xi_moves, nxi_moves = path_to_lr(newpath)
-					if (min_lambda_new(to_continued_fraction(xi_moves)) <= lambda_limit
-						and min_lambda_new(to_continued_fraction(nxi_moves)) <= lambda_limit):
+					if (min_lambda_new(tuple(to_continued_fraction(xi_moves))) <= lambda_limit
+						and min_lambda_new(tuple(to_continued_fraction(nxi_moves))) <= lambda_limit):
 							current.add(newpath)
 		prev = current
 		print(len(prev), "good paths of length", k)
