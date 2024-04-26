@@ -85,10 +85,10 @@ def state_machine(n):
 @cached_function
 def get_graph(n):
 	return DiGraph(
-		{basis : [next_basis(basis, "L", max_steps = n+3)[0],
-		   next_basis(basis, "R", max_steps = n+3)[0]]
+		{basis : {next_basis(basis, "L", max_steps = n+3)[0]:["L/" + next_basis(basis, "L", max_steps = n+3)[1]],
+		   next_basis(basis, "R", max_steps = n+3)[0]:["R/" + next_basis(basis, "R", max_steps = n+3)[1]]}
 			for basis in generate_bases(n)},
-		format='dict_of_lists', loops=True, multiedges=True,
+		format='dict_of_dicts', loops=True, multiedges=True,
 		immutable=False)
 		
 @cached_function
