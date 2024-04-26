@@ -101,7 +101,7 @@ def get_graph(n):
 	return DiGraph(get_edges(n), loops=True, multiedges=True);
 
 # Overrides corr. method in lattice.sage
-def find_good_paths(n, lambda_limit, max_length = 300):
+def find_good_paths(n, lambda_limit, max_length=30):
 	
 	graph = get_graph(n)
 	
@@ -127,15 +127,143 @@ def find_good_paths(n, lambda_limit, max_length = 300):
 					# Check overall approximability
 					xi_moves = "".join(edge[2][0] for edge in newpath);
 					nxi_moves = "".join(edge[2][1] for edge in newpath);
-					if (min_lambda_new(tuple(to_continued_fraction(xi_moves))) <= lambda_limit
-						and min_lambda_new(tuple(to_continued_fraction(nxi_moves))) <= lambda_limit):
+					if (min_lambda_new(tuple(to_continued_fraction(xi_moves)))
+						<= lambda_limit
+						and min_lambda_new(tuple(to_continued_fraction(nxi_moves)))
+						<= lambda_limit):
 							# print(xi_moves, nxi_moves);
 							current.add(newpath)
 		prev = current
 		print(len(prev), "good paths of length", k)
 		current = set()
 	return prev
+
+# Find the lowest point of the Lagrange spectrum Ln.
+# Inputs:
+# - n: a prime number (n = 1 is also permitted)
+# - lambda_limit: a predetermined upper limit for the approximability values to
+#     check (default Infinity)
+# - max_length: the lengths of the paths in the graph to check (default 1000,
+#     to keep looking until it stabilizes).
+# - verbosity: a level of verbosity from 0 to 3:
+#   = 0: print nothing
+#   = 1: print final findings
+#   = 2: print timely updates (number of paths of each length, running record of
+#        lowest point of Ln found)
+#   = 3: print detailed info
+# Returns (lambda, alpha), where lambda is the lowest point of Ln, and alpha >
+# lambda is a lower bound for all other points. In particular, if this method
+# terminates and returns a value, it verifies the following conjectures for that
+# value of n:
+# - min(Ln) is an algebraic number of degree <= 2.
+# - min(Ln) = min(Mn).
+# - min(Ln) is an isolated point in Ln and Mn.
+
+
+def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 	
+	graph = get_graph(n)
+	cycle_found = False
+	
+	# k = 1: Start with all edges within the limit
+	current = set()
+	for edge in get_edges(n):
+		xi_moves = "".join(edge[2][0]);
+		nxi_moves = "".join(edge[2][1]);
+		if ((lxi := min_lambda_new(tuple((to_continued_fraction(xi_moves)))))
+			<= lambda_limit
+			and ((lnxi := min_lambda_new(tuple((to_continued_fraction(nxi_moves)))))
+			<= lambda_limit)
+		):
+			current.add((edge,));
+	
+	if verbosity >= 2:
+		print(len(current), "good paths of length", 1)
+	path_counts = [len(current)]
+	prev = current
+	current = set()
+	excluded = Infinity;
+	
+	for k in [2..max_length]:
+		for oldpath in prev:
+			vtx = oldpath[-1][1];
+			for edge in graph.outgoing_edge_iterator(vtx):
+				newpath = oldpath + (edge,);
+				
+				# Check head segment
+				if newpath[1:] in prev:
+					# Check overall approximability
+					xi_moves = "".join(edge[2][0] for edge in newpath);
+					nxi_moves = "".join(edge[2][1] for edge in newpath);
+					if ((lxi := min_lambda_new(tuple((to_continued_fraction(xi_moves)))))
+						<= lambda_limit
+						and ((lnxi := min_lambda_new(tuple((to_continued_fraction(nxi_moves)))))
+						<= lambda_limit)
+					):
+						current.add(newpath);
+						
+						# If cycle, decrease the lambda-limit.
+						if newpath[0][0] == newpath[-1][1]:
+							
+							if verbosity >= 3:
+								print("Cycle", xi_moves);
+							lambda_new = max(
+								approx_value(to_continued_fraction(xi_moves, cyclic=True)),
+								approx_value(to_continued_fraction(nxi_moves, cyclic=True))
+							);
+							if N(lambda_new) < N(lambda_limit):
+								lambda_limit = lambda_new;
+								cycle_found = True;
+								if verbosity >= 2:
+									print("Found new best cycle of type", [
+									  to_continued_fraction(xi_moves, cyclic=True),
+									  to_continued_fraction(nxi_moves, cyclic=True)],
+										"with approximability", lambda_limit, "=", N(lambda_limit)
+									);
+					else:
+						excluded = min(excluded, max(lxi, lnxi))
+		if verbosity >= 2:
+			print(len(current), "good paths of length", k)
+		if len(current) == 0:
+			return None
+		path_counts.append([len(current)])
+		
+		# Check for stability
+		if cycle_found:
+			continuations = {}
+			stable = True
+			tail = floor((k - sqrt(k))/2) # How many leading and trailing moves to clip.
+			for path in current:
+				part = path[tail:-tail-1]
+				cnt1 = path[-tail-1];
+				cnt2 = continuations.get(part)
+				if cnt2 is None:
+					continuations[part] = cnt1
+				elif cnt2 != cnt1:
+					stable = False
+					if verbosity >= 3:
+						print("Unstable")
+					break
+			if stable:
+				if verbosity >= 3:
+					print("Stable")
+				if verbosity >= 1:
+					print("Lowest point of Ln is:             ", N(lambda_limit), "=", lambda_limit)
+					print("Next lowest point of Ln is at least", N(excluded), "=", excluded)
+				return lambda_limit, excluded
+		
+		prev = current
+		current = set()
+	if verbosity >= 1:
+		print("Lowest point found is", lambda_limit, "=", N(lambda_limit))
+	return None
+
 #### Testing:
 # show(get_graph(7))
 # find_good_paths(67, 3.67821976, 30)
+if False:
+  for p in Primes():
+    if jacobi_symbol(p,5) == -1 and p != 2 and jacobi_symbol(2,p) == -1:
+      print("----------------------------------------")
+      print("n =", p);
+      find_min_Ln(p, verbosity = 2);
