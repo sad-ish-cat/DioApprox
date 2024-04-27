@@ -91,7 +91,6 @@ def get_graph(n):
 		format='dict_of_dicts', loops=True, multiedges=True,
 		immutable=False)
 		
-@cached_function
 def path_to_lr(path):
 
 	if len(path) == 0:
@@ -119,34 +118,25 @@ def list_cycles_lr(n, max_length = 5):
 	g.remove_loops();
 	return [path_to_lr(c) for c in g.all_cycles_iterator(max_length = max_length)]
 	
-# Helper function for to_continued_fraction
-@cached_function
-def count_lr_consecutive(lrseq):
-	
-	seq = list(lrseq)
-	if (len(seq) == 1):
-		return 1
-	elif (seq[0] == seq[1]):
-		return 1 + count_lr_consecutive(lrseq[1:])
-	else:
-		return 1
-	
-
-@cached_function	
+# Convert LR sequence to continued fraction
 def to_continued_fraction(lrseq, cyclic=False):
 
 	if lrseq == "":
 		return []
 		
-	seq = lrseq
+	prev = ""
+	count = 0
 	continued_frac = []
 	
-	while(len(seq)>0):
-	
-		num = count_lr_consecutive(seq)
-		continued_frac.append(num)
-		
-		seq = seq[num:]
+	for ch in lrseq:
+		if ch == prev:
+			count += 1;
+		else:
+			prev = ch;
+			if count >= 1:
+				continued_frac.append(count)
+			count = 1
+	continued_frac.append(count)
 	
 	if not(cyclic):
 		return continued_frac
@@ -173,14 +163,14 @@ def to_lr_seq(ctdfrac):
 	
 def approx_value(ctdfrac):
 	
-	biggest = max(ctdfrac)
+	max_term = max(ctdfrac)
 	
-	if biggest == Infinity:
+	if max_term == Infinity:
 		return Infinity
 	
 	rotations = []
 	for i in range(len(ctdfrac)):
-		if ctdfrac[i] >= biggest - 1:
+		if ctdfrac[i] >= max_term - 1:
 			rotations.append(ctdfrac[i:] + ctdfrac[:i])
 		
 	largest = 0
@@ -207,21 +197,19 @@ def list_cycle_approx(n, max_length = 5, sort = True):
 	return ret
 	
 def min_lambda(ctdfrac):
-	# ctdfrac = to_continued_fraction(lrseq);
-	
 	n = len(ctdfrac)
 	
 	if n == 0:
 		return 0
 	
-	biggest = max(ctdfrac)
+	max_term = max(ctdfrac)
 	
-	if biggest == Infinity:
+	if max_term == Infinity:
 		return Infinity
 	
 	largest = 0
 	for i in range(len(ctdfrac)):
-		if ctdfrac[i] >= biggest - 1:
+		if ctdfrac[i] >= max_term - 1:
 			#print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
 			approx = continued_fraction(ctdfrac[i:n-((n-i-1)%2)]).value() +\
 			continued_fraction([0] + ctdfrac[i-1:-((i-1)%2):-1]).value();
@@ -233,7 +221,8 @@ def min_lambda(ctdfrac):
 @cached_function
 def min_lambda_new(ctdfrac):
 
-
+  # TODO: Due to an indexing error, this gives a rather loose upper bound based 
+  # only on terms on one side on the continued fraction. Fix.
 	
 	lr_seq = to_lr_seq(tuple(ctdfrac))
 	
@@ -242,14 +231,14 @@ def min_lambda_new(ctdfrac):
 	if n == 0:
 		return 0
 	
-	biggest = max(ctdfrac)
+	max_term = max(ctdfrac)
 	
-	if biggest == Infinity:
+	if max_term == Infinity:
 		return Infinity
 	
 	largest = 0
 	for i in range(len(ctdfrac)):
-		if ctdfrac[i] >= biggest - 1: 
+		if ctdfrac[i] >= max_term - 1: 
 			#print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
 			approx = create_number_from_left_right(to_lr_seq(tuple(ctdfrac[i:n-((n-i-1)%2)]))) +\
 			create_number_from_left_right(to_lr_seq(tuple((0,) + ctdfrac[i-1:-((i-1)%2):-1])));
@@ -281,8 +270,3 @@ def find_good_paths(n, lambda_limit, max_length = 5):
 		print(len(prev), "good paths of length", k)
 		current = set()
 	return prev
-	
-	# Possible optimizations:
-	# - Replace prev by a set
-	# - Cache LR-sequences
-	# - Cache next_basis

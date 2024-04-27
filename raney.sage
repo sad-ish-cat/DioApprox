@@ -142,15 +142,15 @@ def find_good_paths(n, lambda_limit, max_length=30):
 # Inputs:
 # - n: a prime number (n = 1 is also permitted)
 # - lambda_limit: a predetermined upper limit for the approximability values to
-#     check (default Infinity)
+#			check (default Infinity)
 # - max_length: the lengths of the paths in the graph to check (default 1000,
-#     to keep looking until it stabilizes).
+#			to keep looking until it stabilizes).
 # - verbosity: a level of verbosity from 0 to 3:
-#   = 0: print nothing
-#   = 1: print final findings
-#   = 2: print timely updates (number of paths of each length, running record of
-#        lowest point of Ln found)
-#   = 3: print detailed info
+#		= 0: print nothing
+#		= 1: print final findings
+#		= 2: print timely updates (number of paths of each length, running record of
+#				 lowest point of Ln found)
+#		= 3: print detailed info
 # Returns (lambda, alpha), where lambda is the lowest point of Ln, and alpha >
 # lambda is a lower bound for all other points. In particular, if this method
 # terminates and returns a value, it verifies the following conjectures for that
@@ -163,17 +163,21 @@ def find_good_paths(n, lambda_limit, max_length=30):
 def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 	
 	graph = get_graph(n)
+	if verbosity >= 2:
+		print("Graph found")
 	cycle_found = False
 	
 	# k = 1: Start with all edges within the limit
 	current = set()
 	for edge in get_edges(n):
+		lxi = 0; lnxi = 0;
 		xi_moves = "".join(edge[2][0]);
 		nxi_moves = "".join(edge[2][1]);
-		if ((lxi := min_lambda_new(tuple((to_continued_fraction(xi_moves)))))
-			<= lambda_limit
-			and ((lnxi := min_lambda_new(tuple((to_continued_fraction(nxi_moves)))))
-			<= lambda_limit)
+		if (
+			(lxi := max(cf := to_continued_fraction(xi_moves))) <= lambda_limit and
+			(lnxi := max(ncf := to_continued_fraction(nxi_moves))) <= lambda_limit and
+			(lxi := min_lambda_new(tuple(cf))) <= lambda_limit
+			and ((lnxi := min_lambda_new(tuple(ncf))) <= lambda_limit)
 		):
 			current.add((edge,));
 	
@@ -184,6 +188,7 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 	current = set()
 	excluded = Infinity;
 	
+	
 	for k in [2..max_length]:
 		for oldpath in prev:
 			vtx = oldpath[-1][1];
@@ -193,12 +198,14 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 				# Check head segment
 				if newpath[1:] in prev:
 					# Check overall approximability
+					lxi = 0; lnxi = 0;
 					xi_moves = "".join(edge[2][0] for edge in newpath);
 					nxi_moves = "".join(edge[2][1] for edge in newpath);
-					if ((lxi := min_lambda_new(tuple((to_continued_fraction(xi_moves)))))
-						<= lambda_limit
-						and ((lnxi := min_lambda_new(tuple((to_continued_fraction(nxi_moves)))))
-						<= lambda_limit)
+					if (
+						(lxi := max(cf := to_continued_fraction(xi_moves))) <= lambda_limit and
+						(lnxi := max(ncf := to_continued_fraction(nxi_moves))) <= lambda_limit and
+						(lxi := min_lambda_new(tuple(cf))) <= lambda_limit
+						and ((lnxi := min_lambda_new(tuple(ncf)))	<= lambda_limit)
 					):
 						current.add(newpath);
 						
@@ -216,8 +223,8 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 								cycle_found = True;
 								if verbosity >= 2:
 									print("Found new best cycle of type", [
-									  to_continued_fraction(xi_moves, cyclic=True),
-									  to_continued_fraction(nxi_moves, cyclic=True)],
+										to_continued_fraction(xi_moves, cyclic=True),
+										to_continued_fraction(nxi_moves, cyclic=True)],
 										"with approximability", lambda_limit, "=", N(lambda_limit)
 									);
 					else:
@@ -248,7 +255,7 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 				if verbosity >= 3:
 					print("Stable")
 				if verbosity >= 1:
-					print("Lowest point of Ln is:             ", N(lambda_limit), "=", lambda_limit)
+					print("Lowest point of Ln is:" + " "*13, N(lambda_limit), "=", lambda_limit)
 					print("Next lowest point of Ln is at least", N(excluded), "=", excluded)
 				return lambda_limit, excluded
 		
@@ -258,12 +265,15 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 		print("Lowest point found is", lambda_limit, "=", N(lambda_limit))
 	return None
 
+def test_interesting_primes():
+	for p in Primes():
+		if p > 2000 and jacobi_symbol(p,5) == -1 and p != 2 and jacobi_symbol(2,p) == -1:
+			print("----------------------------------------")
+			print("n =", p);
+			find_min_Ln(p, verbosity = 2);
+			
 #### Testing:
 # show(get_graph(7))
 # find_good_paths(67, 3.67821976, 30)
-if False:
-  for p in Primes():
-    if jacobi_symbol(p,5) == -1 and p != 2 and jacobi_symbol(2,p) == -1:
-      print("----------------------------------------")
-      print("n =", p);
-      find_min_Ln(p, verbosity = 2);
+# find_min_Ln(67, verbosity=2)
+# test_interesting_primes()
