@@ -145,12 +145,13 @@ def find_good_paths(n, lambda_limit, max_length=30):
 #			check (default Infinity)
 # - max_length: the lengths of the paths in the graph to check (default 1000,
 #			to keep looking until it stabilizes).
-# - verbosity: a level of verbosity from 0 to 3:
+# - verbosity: a level of verbosity from 0 to 4:
 #		= 0: print nothing
 #		= 1: print final findings
 #		= 2: print timely updates (number of paths of each length, running record of
 #				 lowest point of Ln found)
-#		= 3: print detailed info
+#		= 3: print info about all cycles
+#   = 4: print info about all paths
 # Returns (lambda, alpha), where lambda is the lowest point of Ln, and alpha >
 # lambda is a lower bound for all other points. In particular, if this method
 # terminates and returns a value, it verifies the following conjectures for that
@@ -197,6 +198,8 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 				
 				# Check head segment
 				if newpath[1:] in prev:
+					if verbosity >= 4:
+						print("Path", [edge[0] for edge in newpath] + [newpath[-1][1]], end=" ")
 					# Check overall approximability
 					lxi = 0; lnxi = 0;
 					xi_moves = "".join(edge[2][0] for edge in newpath);
@@ -208,6 +211,8 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 						and ((lnxi := min_lambda_new(tuple(ncf)))	<= lambda_limit)
 					):
 						current.add(newpath);
+						if verbosity >= 4:
+							print("Good")
 						
 						# If cycle, decrease the lambda-limit.
 						if newpath[0][0] == newpath[-1][1]:
@@ -228,6 +233,8 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 										"with approximability", lambda_limit, "=", N(lambda_limit)
 									);
 					else:
+						if verbosity >= 4:
+							print(max(lxi, lnxi));
 						excluded = min(excluded, max(lxi, lnxi))
 		if verbosity >= 2:
 			print(len(current), "good paths of length", k)
@@ -267,7 +274,7 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 
 def test_interesting_primes():
 	for p in Primes():
-		if p > 2000 and jacobi_symbol(p,5) == -1 and p != 2 and jacobi_symbol(2,p) == -1:
+		if p > 0 and jacobi_symbol(p,5) == -1 and p != 2 and jacobi_symbol(2,p) == -1:
 			print("----------------------------------------")
 			print("n =", p);
 			find_min_Ln(p, verbosity = 2);
