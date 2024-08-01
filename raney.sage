@@ -1,9 +1,11 @@
 load("lattice.sage")
 
+# raney.sage: Compute transducers by the methods of Raney
+
 matrix_L = matrix([[1,0], [1,1]])
 matrix_R = matrix([[1,1], [0,1]])
-matrix_L_inv = matrix([[1,0], [-1,1]])
-matrix_R_inv = matrix([[1,-1], [0,1]])
+matrix_L_inv = matrix_L^-1
+matrix_R_inv = matrix_R^-1
 
 def PROD(word):
 	ret = identity_matrix(2);

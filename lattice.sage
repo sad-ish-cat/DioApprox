@@ -222,7 +222,7 @@ def min_lambda(ctdfrac):
 def min_lambda_new(ctdfrac):
 
   # TODO: Due to an indexing error, this gives a rather loose upper bound based 
-  # only on terms on one side on the continued fraction. Fix.
+  # only on terms on one side on the continued fraction. But it seems fast.
 	
 	lr_seq = to_lr_seq(tuple(ctdfrac))
 	

@@ -9,7 +9,7 @@ class Node:
 		self.left = left
 		self.right = right
 		self.data = data
-		self.height = 0
+		self.height = height
 
 
 # Makes a Stern-Brocot tree of given height and initial root data
