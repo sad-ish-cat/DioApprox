@@ -23,10 +23,10 @@ def to_CB(mat_orig):
 	mat = mat_orig;
 	word = "";
 	while True:
-		if mat[1][0] >= mat[1][1]:
+		if mat[1,0] >= mat[1,1]:
 			word = "L" + word;
 			mat = mat * matrix_L_inv;
-		elif mat[0][1] >= mat[0][0]:
+		elif mat[0,1] >= mat[0,0]:
 			word = "R" + word;
 			mat = mat * matrix_R_inv;
 		else:
@@ -38,10 +38,10 @@ def to_RB(mat_orig):
 	mat = mat_orig;
 	word = "";
 	while True:
-		if mat[0][1] >= mat[1][1]:
+		if mat[0,1] >= mat[1,1]:
 			word = word + "R";
 			mat = matrix_R_inv * mat;
-		elif mat[1][0] >= mat[0][0]:
+		elif mat[1,0] >= mat[0,0]:
 			word = word + "L";
 			mat = matrix_L_inv * mat;
 		else:
@@ -61,15 +61,15 @@ def get_index(mat, n):
 	if n == 1:
 		return 0;
 	try:
-		return (GF(n)(mat[0][0]) / GF(n)(mat[1][0] - mat[0][0])).lift();
+		return (GF(n)(mat[0,0]) / GF(n)(mat[1,0] - mat[0,0])).lift();
 	except ZeroDivisionError:
-		return (GF(n)(mat[0][1]) / GF(n)(mat[1][1] - mat[0][1])).lift();
+		return (GF(n)(mat[0,1]) / GF(n)(mat[1,1] - mat[0,1])).lift();
 	
 @cached_function
 def get_DB_prime_all(n):
 	# assert is_prime(n)
 	return [get_DB_prime(n, s) for s in range(n)]
-	
+
 def immed_offshoots(word):
 	ret = [];
 	for i in range(len(word)):
@@ -153,7 +153,7 @@ def find_good_paths(n, lambda_limit, max_length=30):
 #		= 2: print timely updates (number of paths of each length, running record of
 #				 lowest point of Ln found)
 #		= 3: print info about all cycles
-#   = 4: print info about all paths
+#		= 4: print info about all paths
 # Returns (lambda, alpha), where lambda is the lowest point of Ln, and alpha >
 # lambda is a lower bound for all other points. In particular, if this method
 # terminates and returns a value, it verifies the following conjectures for that
@@ -163,7 +163,7 @@ def find_good_paths(n, lambda_limit, max_length=30):
 # - min(Ln) is an isolated point in Ln and Mn.
 
 
-def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
+def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 	
 	graph = get_graph(n)
 	if verbosity >= 2:
@@ -173,6 +173,8 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 	# k = 1: Start with all edges within the limit
 	current = set()
 	for edge in get_edges(n):
+		if verbosity >= 4:
+			print("Path", edge[0:2], end=" ")
 		lxi = 0; lnxi = 0;
 		xi_moves = "".join(edge[2][0]);
 		nxi_moves = "".join(edge[2][1]);
@@ -183,6 +185,10 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 			and ((lnxi := min_lambda_new(tuple(ncf))) <= lambda_limit)
 		):
 			current.add((edge,));
+			if verbosity >= 4:
+				print("Good", max(lxi, lnxi))
+		elif verbosity >= 4:
+			print("Bad", max(lxi, lnxi))
 	
 	if verbosity >= 2:
 		print(len(current), "good paths of length", 1)
@@ -210,23 +216,30 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 						(lxi := max(cf := to_continued_fraction(xi_moves))) <= lambda_limit and
 						(lnxi := max(ncf := to_continued_fraction(nxi_moves))) <= lambda_limit and
 						(lxi := min_lambda_new(tuple(cf))) <= lambda_limit
-						and ((lnxi := min_lambda_new(tuple(ncf)))	<= lambda_limit)
+						and ((lnxi := min_lambda_new(tuple(ncf))) <= lambda_limit)
 					):
 						current.add(newpath);
 						if verbosity >= 4:
-							print("Good")
+							print("Good", max(lxi, lnxi))
 						
 						# If cycle, decrease the lambda-limit.
 						if newpath[0][0] == newpath[-1][1]:
 							
 							if verbosity >= 3:
 								print("Cycle", xi_moves);
-							lambda_new = max(
-								approx_value(to_continued_fraction(xi_moves, cyclic=True)),
-								approx_value(to_continued_fraction(nxi_moves, cyclic=True))
+							# First compute approximately to save time for long cycles.
+							lambda_new_N = max(
+								approx_value(to_continued_fraction(moves, cyclic=True),
+									fast = True
+								) for moves in (xi_moves, nxi_moves)
 							);
-							if N(lambda_new) < N(lambda_limit):
-								lambda_limit = lambda_new;
+							if lambda_new_N < N(lambda_limit):
+								# Now compute exactly.
+								lambda_limit = max(
+									approx_value(
+										to_continued_fraction(moves, cyclic=True)
+									) for moves in (xi_moves, nxi_moves)
+								);
 								cycle_found = True;
 								if verbosity >= 2:
 									print("Found new best cycle of type", [
@@ -236,7 +249,7 @@ def find_min_Ln(n, lambda_limit = Infinity, max_length=1000, verbosity=1):
 									);
 					else:
 						if verbosity >= 4:
-							print(max(lxi, lnxi));
+							print("Bad", max(lxi, lnxi));
 						excluded = min(excluded, max(lxi, lnxi))
 		if verbosity >= 2:
 			print(len(current), "good paths of length", k)

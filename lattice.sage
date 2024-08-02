@@ -1,4 +1,5 @@
 load("sternbrocot.sage")
+from sage.rings.continued_fraction import last_two_convergents
 
 @cached_function
 def generate_bases(n): 
@@ -86,7 +87,7 @@ def state_machine(n):
 def get_graph(n):
 	return DiGraph(
 		{basis : {next_basis(basis, "L", max_steps = n+3)[0]:["L/" + next_basis(basis, "L", max_steps = n+3)[1]],
-		   next_basis(basis, "R", max_steps = n+3)[0]:["R/" + next_basis(basis, "R", max_steps = n+3)[1]]}
+			 next_basis(basis, "R", max_steps = n+3)[0]:["R/" + next_basis(basis, "R", max_steps = n+3)[1]]}
 			for basis in generate_bases(n)},
 		format='dict_of_dicts', loops=True, multiedges=True,
 		immutable=False)
@@ -143,7 +144,7 @@ def to_continued_fraction(lrseq, cyclic=False):
 	if len(continued_frac) == 1:
 		return [Infinity]
 	if len(continued_frac) % 2 == 0:
-	    return continued_frac
+			return continued_frac
 	return continued_frac[1:-1] + [continued_frac[0] + continued_frac[-1]]
 
 @cached_function
@@ -161,7 +162,7 @@ def to_lr_seq(ctdfrac):
 	
 	
 	
-def approx_value(ctdfrac):
+def approx_value(ctdfrac, fast=False):
 	
 	max_term = max(ctdfrac)
 	
@@ -176,8 +177,12 @@ def approx_value(ctdfrac):
 	largest = 0
 	
 	for rot in rotations:
-		approx = continued_fraction([[rot[0]],rot[1:] + [rot[0]]]).value() +\
-			continued_fraction([[0], rot[::-1]]).value();
+		if fast:
+			approx = fast_value(continued_fraction([[rot[0]],rot[1:] + [rot[0]]])) +\
+				fast_value(continued_fraction([[0], rot[::-1]]));
+		else:
+			approx = continued_fraction([[rot[0]],rot[1:] + [rot[0]]]).value() +\
+				continued_fraction([[0], rot[::-1]]).value();
 		if approx > largest:
 			largest = approx
 			
@@ -189,39 +194,39 @@ def list_cycle_approx(n, max_length = 5, sort = True):
 	cycles = list_cycles_lr(n, max_length);
 	ret = [
 		[N(max(approx_value(to_continued_fraction(string, cyclic = True))
-		   for string in cycle))] + list(cycle)
-	    for cycle in cycles
+			 for string in cycle))] + list(cycle)
+			for cycle in cycles
 	]
 	if sort:
 		ret.sort()
 	return ret
 	
 # def min_lambda(ctdfrac):
-# 	n = len(ctdfrac)
-# 	
-# 	if n == 0:
-# 		return 0
-# 	
-# 	max_term = max(ctdfrac)
-# 	
-# 	if max_term == Infinity:
-# 		return Infinity
-# 	
-# 	largest = 0
-# 	for i in range(len(ctdfrac)):
-# 		if ctdfrac[i] >= max_term - 1:
-# 			print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
-# 			approx = continued_fraction(ctdfrac[i:n-((n-i-1)%2)]).value() +\
-# 			continued_fraction([0] + ctdfrac[i-1:-((i-1)%2):-1]).value();
-# 			if approx > largest:
-# 				largest = approx
-# 			
-# 	return largest
+#		n = len(ctdfrac)
+#		
+#		if n == 0:
+#			return 0
+#		
+#		max_term = max(ctdfrac)
+#		
+#		if max_term == Infinity:
+#			return Infinity
+#		
+#		largest = 0
+#		for i in range(len(ctdfrac)):
+#			if ctdfrac[i] >= max_term - 1:
+#				print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
+#				approx = continued_fraction(ctdfrac[i:n-((n-i-1)%2)]).value() +\
+#				continued_fraction([0] + ctdfrac[i-1:-((i-1)%2):-1]).value();
+#				if approx > largest:
+#					largest = approx
+#				
+#		return largest
 
 @cached_function
 def min_lambda_new(ctdfrac):
 
-  ctdfrac = tuple(ctdfrac)
+	ctdfrac = tuple(ctdfrac)
 	lr_seq = to_lr_seq(ctdfrac)
 	
 	n = len(ctdfrac)
@@ -238,10 +243,10 @@ def min_lambda_new(ctdfrac):
 	for i in range(len(ctdfrac)):
 		if ctdfrac[i] >= max_term - 1: 
 			approx = (create_number_from_left_right(to_lr_seq(tuple(
-			  ctdfrac[i:n-((n-i-1)%2)]))) +
-			  create_number_from_left_right(to_lr_seq(tuple(
-			    (0,) + ctdfrac[-n+i-1:-n-((i-1)%2):-1])))
-			  )
+				ctdfrac[i:n-((n-i-1)%2)]))) +
+				create_number_from_left_right(to_lr_seq(tuple(
+					(0,) + ctdfrac[-n+i-1:-n-((i-1)%2):-1])))
+				)
 			if approx > largest:
 				largest = approx
 			
@@ -249,24 +254,48 @@ def min_lambda_new(ctdfrac):
 	
 
 	
-def find_good_paths(n, lambda_limit, max_length = 5):
+# def find_good_paths(n, lambda_limit, max_length = 5):
+#		
+#		graph = get_graph(n)
+#		prev = set([(node, ) for node in graph.vertices()]) # k = 0
+#		current = set()
+#		for k in [1..max_length]:
+#			for oldpath in prev:
+#				vtx = oldpath[-1];
+#				for edge in graph.outgoing_edge_iterator(vtx,labels=False):
+#					newpath = oldpath + (edge[1],);
+#					
+#					# Check head segment
+#					if newpath[1:] in prev:
+#						xi_moves, nxi_moves = path_to_lr(newpath)
+#						if (min_lambda_new(tuple(to_continued_fraction(xi_moves))) <= lambda_limit
+#							and min_lambda_new(tuple(to_continued_fraction(nxi_moves))) <= lambda_limit):
+#								current.add(newpath)
+#			prev = current
+#			print(len(prev), "good paths of length", k)
+#			current = set()
+#		return prev
+
+
+# Adapted from the usual value() method for CF's, but returns a numeric value instead.
+# Cf. /usr/lib/python3/dist-packages/sage/rings/continued_fraction.py
+def fast_value(cf): 
+	if cf._x1 and cf._x1[0] < 0:
+		return -fast_value(-cf)
+
+	if cf._x2[0] is Infinity:
+			return cf._rational_()
 	
-	graph = get_graph(n)
-	prev = set([(node, ) for node in graph.vertices()]) # k = 0
-	current = set()
-	for k in [1..max_length]:
-		for oldpath in prev:
-			vtx = oldpath[-1];
-			for edge in graph.outgoing_edge_iterator(vtx,labels=False):
-				newpath = oldpath + (edge[1],);
-				
-				# Check head segment
-				if newpath[1:] in prev:
-					xi_moves, nxi_moves = path_to_lr(newpath)
-					if (min_lambda_new(tuple(to_continued_fraction(xi_moves))) <= lambda_limit
-						and min_lambda_new(tuple(to_continued_fraction(nxi_moves))) <= lambda_limit):
-							current.add(newpath)
-		prev = current
-		print(len(prev), "good paths of length", k)
-		current = set()
-	return prev
+	# determine the equation for the purely periodic cont. frac. determined
+	# by cf._x2
+	p0, q0, p1, q1 = last_two_convergents(cf._x2)
+	
+	# now x is one of the root of the equation
+	#		q1 x^2 + (q0 - p1) x - p0 = 0
+	D = (q0-p1)**2 + 4*q1*p0
+	x = ((p1 - q0) + sqrt(RR(D))) / (2*q1)
+	
+	# we add the preperiod
+	p0, q0, p1, q1 = last_two_convergents(cf._x1)
+	return (p1*x + p0) / (q1*x + q0)
+		 

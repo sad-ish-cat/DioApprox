@@ -33,6 +33,7 @@ def find_Markoff_in_order(max_num):
         assert not found;
         sols.insert(j, new)
         
+# Check the strong Markoff uniqueness conjecture up to limit max_num.        
 def check_strong_Markoff_uniqueness(max_num):
   nums = [(9*sol[0]^2 - 4).squarefree_part()
     for sol in find_Markoff_in_order(max_num)];
