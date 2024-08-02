@@ -196,35 +196,33 @@ def list_cycle_approx(n, max_length = 5, sort = True):
 		ret.sort()
 	return ret
 	
-def min_lambda(ctdfrac):
-	n = len(ctdfrac)
-	
-	if n == 0:
-		return 0
-	
-	max_term = max(ctdfrac)
-	
-	if max_term == Infinity:
-		return Infinity
-	
-	largest = 0
-	for i in range(len(ctdfrac)):
-		if ctdfrac[i] >= max_term - 1:
-			# print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
-			approx = continued_fraction(ctdfrac[i:n-((n-i-1)%2)]).value() +\
-			continued_fraction([0] + ctdfrac[i-1:-((i-1)%2):-1]).value();
-			if approx > largest:
-				largest = approx
-			
-	return largest
+# def min_lambda(ctdfrac):
+# 	n = len(ctdfrac)
+# 	
+# 	if n == 0:
+# 		return 0
+# 	
+# 	max_term = max(ctdfrac)
+# 	
+# 	if max_term == Infinity:
+# 		return Infinity
+# 	
+# 	largest = 0
+# 	for i in range(len(ctdfrac)):
+# 		if ctdfrac[i] >= max_term - 1:
+# 			print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
+# 			approx = continued_fraction(ctdfrac[i:n-((n-i-1)%2)]).value() +\
+# 			continued_fraction([0] + ctdfrac[i-1:-((i-1)%2):-1]).value();
+# 			if approx > largest:
+# 				largest = approx
+# 			
+# 	return largest
 
 @cached_function
 def min_lambda_new(ctdfrac):
 
-  # TODO: Due to an indexing error, this gives a rather loose upper bound based 
-  # only on terms on one side on the continued fraction. But it seems fast.
-	
-	lr_seq = to_lr_seq(tuple(ctdfrac))
+  ctdfrac = tuple(ctdfrac)
+	lr_seq = to_lr_seq(ctdfrac)
 	
 	n = len(ctdfrac)
 	
@@ -239,10 +237,11 @@ def min_lambda_new(ctdfrac):
 	largest = 0
 	for i in range(len(ctdfrac)):
 		if ctdfrac[i] >= max_term - 1: 
-			# print(ctdfrac[i:n-((n-i-1)%2)], [0] + ctdfrac[i-1:-((i-1)%2):-1])
-			approx = create_number_from_left_right(to_lr_seq(tuple(ctdfrac[i:n-((n-i-1)%2)])))
-			# +\
-			# create_number_from_left_right(to_lr_seq(tuple((0,) + ctdfrac[i-1:-((i-1)%2):-1])));
+			approx = (create_number_from_left_right(to_lr_seq(tuple(
+			  ctdfrac[i:n-((n-i-1)%2)]))) +
+			  create_number_from_left_right(to_lr_seq(tuple(
+			    (0,) + ctdfrac[-n+i-1:-n-((i-1)%2):-1])))
+			  )
 			if approx > largest:
 				largest = approx
 			
