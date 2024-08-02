@@ -235,18 +235,20 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 							);
 							if lambda_new_N < N(lambda_limit):
 								# Now compute exactly.
-								lambda_limit = max(
+								lambda_new = max(
 									approx_value(
 										to_continued_fraction(moves, cyclic=True)
 									) for moves in (xi_moves, nxi_moves)
 								);
-								cycle_found = True;
-								if verbosity >= 2:
-									print("Found new best cycle of type", [
-										to_continued_fraction(xi_moves, cyclic=True),
-										to_continued_fraction(nxi_moves, cyclic=True)],
-										"with approximability", lambda_limit, "=", N(lambda_limit)
-									);
+								if lambda_new != lambda_limit:
+									lambda_limit = lambda_new
+									cycle_found = True;
+									if verbosity >= 2:
+										print("Found new best cycle of type", [
+											to_continued_fraction(xi_moves, cyclic=True),
+											to_continued_fraction(nxi_moves, cyclic=True)],
+											"with approximability", lambda_limit, "=", N(lambda_limit)
+										);
 					else:
 						if verbosity >= 4:
 							print("Bad", max(lxi, lnxi));
@@ -287,11 +289,17 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 		print("Lowest point found is", lambda_limit, "=", N(lambda_limit))
 	return None
 
+markoff_data = [[5], [2], [13,17], [37,41]]
+  
+def is_first_6(p):
+  return any(all(kronecker_symbol(p, m) >= 0
+    for m in ent) for ent in markoff_data)
+  
 def test_interesting_primes():
 	for p in Primes():
-		if p > 0 and jacobi_symbol(p,5) == -1 and p != 2 and jacobi_symbol(2,p) == -1:
+		if not is_first_6(p):
 			print("----------------------------------------")
-			print("n =", p);
+			print("p =", p);
 			find_min_Ln(p, verbosity = 2);
 			
 #### Testing:
@@ -299,3 +307,9 @@ def test_interesting_primes():
 # find_good_paths(67, 3.67821976, 30)
 # find_min_Ln(67, verbosity=2)
 # test_interesting_primes()
+
+# An:
+# for p in Primes():
+#   if not is_first_6(p):
+#     print("p =", p)
+#     find_min_Ln(p, verbosity = 1) 

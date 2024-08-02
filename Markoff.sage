@@ -58,3 +58,4 @@ def real_qf_class_groups(min_rad, max_rad):
     if D.is_squarefree():
       print(D, end=" ", flush=True);
       print(list(QuadraticField(D).class_group().elementary_divisors()))
+      
