@@ -289,19 +289,37 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 		print("Lowest point found is", lambda_limit, "=", N(lambda_limit))
 	return None
 
-markoff_data = [[5], [2], [13,17], [37,41]]
+markoff_data = {
+  (5,) : sqrt(5),
+  (2,) : sqrt(8),
+  (13,17) : sqrt(221)/5,
+  (37,41) : sqrt(1517)/13
+}
   
 def is_first_6(p):
   return any(all(kronecker_symbol(p, m) >= 0
     for m in ent) for ent in markoff_data)
-  
+
+def min_Ln_easy(p):
+  for (ent, val) in markoff_data.items():
+    if all(kronecker_symbol(p, m) >= 0 for m in ent):
+      return val
+
 def test_interesting_primes():
 	for p in Primes():
 		if not is_first_6(p):
 			print("----------------------------------------")
 			print("p =", p);
 			find_min_Ln(p, verbosity = 2);
-			
+
+def print_boring_primes():
+  for p in Primes():
+    if p > 2000:
+      break
+    val = min_Ln_easy(p)
+    if val is not None:
+      print(p, N(val))
+
 #### Testing:
 # show(get_graph(7))
 # find_good_paths(67, 3.67821976, 30)
