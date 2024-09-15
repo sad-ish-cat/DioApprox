@@ -163,7 +163,10 @@ def find_good_paths(n, lambda_limit, max_length=30):
 # - min(Ln) is an isolated point in Ln and Mn.
 
 
-def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
+def find_min_Ln(n, lambda_limit = 5, max_length=1000, verbosity=1):
+	
+	if verbosity >= 1:
+		print("p =", n)
 	
 	graph = get_graph(n)
 	if verbosity >= 2:
@@ -241,6 +244,7 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 									) for moves in (xi_moves, nxi_moves)
 								);
 								if lambda_new != lambda_limit:
+									excluded = min(excluded, lambda_limit)
 									lambda_limit = lambda_new
 									cycle_found = True;
 									if verbosity >= 2:
@@ -266,7 +270,7 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 			tail = floor((k - sqrt(k))/2) # How many leading and trailing moves to clip.
 			for path in current:
 				part = path[tail:-tail-1]
-				cnt1 = path[-tail-1];
+				cnt1 = path[tail+1:k-tail];
 				cnt2 = continuations.get(part)
 				if cnt2 is None:
 					continuations[part] = cnt1
@@ -278,9 +282,64 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 			if stable:
 				if verbosity >= 3:
 					print("Stable")
+				# Find all cycles. Make sure no long cycles were missed.
+				new_graph = DiGraph(continuations.items(), format='list_of_edges')
+				cycles = [[path[0] for path in cycle]
+					for cycle in new_graph.all_simple_cycles()
+				]
+				cycle_qualities = {}
+				for cycle in cycles:
+					xi_moves	= "".join(edge[2][0] for edge in cycle[:-1]);
+					nxi_moves = "".join(edge[2][1] for edge in cycle[:-1]);
+					lambda_value = max(
+						approx_value(
+							to_continued_fraction(moves, cyclic=True)
+						) for moves in (xi_moves, nxi_moves)
+					)
+					lambda_new_N = max(
+						approx_value(to_continued_fraction(moves, cyclic=True),
+							fast = True
+						) for moves in (xi_moves, nxi_moves)
+					)
+					if lambda_new_N < lambda_limit:
+						if verbosity >= 3/2:
+							print("In endgame, found new best cycle of type", [
+								to_continued_fraction(xi_moves, cyclic=True),
+								to_continued_fraction(nxi_moves, cyclic=True)],
+								"with approximability", lambda_value, "=", lambda_new_N
+							);
+						if lambda_limit != lambda_value:
+							excluded = min(excluded, lambda_limit)
+						lambda_limit = lambda_value
+					cycle_qualities[tuple(cycle)] = lambda_value
 				if verbosity >= 1:
 					print("Lowest point of Ln is:" + " "*13, N(lambda_limit), "=", lambda_limit)
 					print("Next lowest point of Ln is at least", N(excluded), "=", excluded)
+					# print(cycle_qualities)
+					for entry in cycle_qualities.items():
+						if entry[1] == lambda_limit:
+							cycle = entry[0]
+							cycle_start = cycle[0][0]
+							if cycle_start == 0:
+								xi_transient = ""
+								nxi_transient = ""
+							else:
+								transient = graph.edge_label(0, cycle_start)[0]
+								xi_transient = transient[0]
+								nxi_transient = transient[1]
+							xi_period = "".join(edge[2][0] for edge in cycle[:-1]);
+							nxi_period = "".join(edge[2][1] for edge in cycle[:-1]);
+							
+							xi_cf = continued_fraction(
+								to_eventually_periodic_cf(xi_transient, xi_period))
+							nxi_cf = continued_fraction(
+								to_eventually_periodic_cf(nxi_transient, nxi_period))
+							xi = xi_cf.value(); nxi = nxi_cf.value()
+							assert nxi == n * xi
+							
+							print("Minimum point at cycle", [edge[0] for edge in entry[0]])
+							print("\txi =", xi, "=", xi_cf)
+							print("\tp*xi =", nxi, "=", nxi_cf)
 				return lambda_limit, excluded
 		
 		prev = current
@@ -290,35 +349,42 @@ def find_min_Ln(n, lambda_limit = 10, max_length=1000, verbosity=1):
 	return None
 
 markoff_data = {
-  (5,) : sqrt(5),
-  (2,) : sqrt(8),
-  (13,17) : sqrt(221)/5,
-  (37,41) : sqrt(1517)/13
+	(5,) : sqrt(5),
+	(2,) : sqrt(8),
+	(13,17) : sqrt(221)/5,
+	(37,41) : sqrt(1517)/13
 }
-  
+	
 def is_first_6(p):
-  return any(all(kronecker_symbol(p, m) >= 0
-    for m in ent) for ent in markoff_data)
+	return any(all(kronecker_symbol(p, m) >= 0
+		for m in ent) for ent in markoff_data)
 
 def min_Ln_easy(p):
-  for (ent, val) in markoff_data.items():
-    if all(kronecker_symbol(p, m) >= 0 for m in ent):
-      return val
+	for (ent, val) in markoff_data.items():
+		if all(kronecker_symbol(p, m) >= 0 for m in ent):
+			return val
 
-def test_interesting_primes():
+def test_all_primes(verbosity = 1):
+	for p in Primes():
+			print("-"*40)
+			find_min_Ln(p, verbosity = verbosity);
+
+def test_interesting_primes(verbosity = 2):
 	for p in Primes():
 		if not is_first_6(p):
-			print("----------------------------------------")
-			print("p =", p);
-			find_min_Ln(p, verbosity = 2);
+			print("-"*40)
+			find_min_Ln(p, verbosity = verbosity);
 
 def print_boring_primes():
-  for p in Primes():
-    if p > 2000:
-      break
-    val = min_Ln_easy(p)
-    if val is not None:
-      print(p, N(val))
+	for p in Primes():
+		if p > 2000:
+			break
+		val = min_Ln_easy(p)
+		if val is not None:
+			print(p, N(val))
+			
+def compact(cf):
+	return "".join([str(a) for a in cf])
 
 #### Testing:
 # show(get_graph(7))
@@ -328,6 +394,6 @@ def print_boring_primes():
 
 # An:
 # for p in Primes():
-#   if not is_first_6(p):
-#     print("p =", p)
-#     find_min_Ln(p, verbosity = 1) 
+#		if not is_first_6(p):
+#			print("p =", p)
+#			find_min_Ln(p, verbosity = 1) 

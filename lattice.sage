@@ -147,6 +147,39 @@ def to_continued_fraction(lrseq, cyclic=False):
 			return continued_frac
 	return continued_frac[1:-1] + [continued_frac[0] + continued_frac[-1]]
 
+# Convert eventually periodic LR sequence to continued fraction
+def to_eventually_periodic_cf(transient, period):
+	cf1 = to_continued_fraction(transient)
+	if len(transient) == 0 or transient[0] == "L":
+		cf1 = [0] + cf1
+	cf2 = to_continued_fraction(period, cyclic=True)
+	
+	last_transient = transient[-1] if len(transient) > 0 else "R"
+	
+	if last_transient != period[0] and period[-1] != period[0]:
+		return (cf1, cf2)
+	elif last_transient == period[0] and period[-1] != period[0]:
+		return (cf1[:-1] + [cf1[-1] + cf2[0]], cf2[1:] + [cf2[0]])
+	elif last_transient != period[0] and period[-1] == period[0]:
+		return (cf1 + [to_continued_fraction(period, cyclic=False)[0]], cf2)
+	elif last_transient == period[0] and period[-1] == period[0]:
+		return (cf1[:-1] + [cf1[-1] + to_continued_fraction(period, cyclic=False)[0]], cf2)
+
+def test_to_eventually_periodic_cf():
+	assert to_eventually_periodic_cf("RR", "LLLRLRR") == ([2], [3, 1, 1, 2])
+	assert to_eventually_periodic_cf("RR", "RRRLRLL") == ([5], [1, 1, 2, 3])
+	assert to_eventually_periodic_cf("RR", "LLLRLL")  == ([2, 3], [1, 5])
+	assert to_eventually_periodic_cf("RR", "RRLLRRR") == ([4], [2, 5])
+	assert to_eventually_periodic_cf("LL", "LLLRLRR") == ([0, 5], [1, 1, 2, 3])
+	assert to_eventually_periodic_cf("LL", "RRRLRLL") == ([0, 2], [3, 1, 1, 2])
+	assert to_eventually_periodic_cf("LL", "LLLRLLL") == ([0, 5], [1, 6])
+	assert to_eventually_periodic_cf("LL", "RRLLRRR") == ([0, 2, 2], [2, 5])
+	assert to_eventually_periodic_cf("", "RRLR") == ([2], [1, 3])
+	assert to_eventually_periodic_cf("", "RRLLL") in [([2], [3, 2]), ([], [2, 3])]
+	assert to_eventually_periodic_cf("", "LLRRR") == ([0], [2, 3])
+	assert to_eventually_periodic_cf("", "LLRL") == ([0, 2], [1, 3])
+
+# Convert continued fraction to LR sequence
 @cached_function
 def to_lr_seq(ctdfrac):
 	
@@ -159,8 +192,6 @@ def to_lr_seq(ctdfrac):
 			lr_seq += "L" * ctdfrac[i]
 			
 	return lr_seq[:len(lr_seq)-1]
-	
-	
 	
 def approx_value(ctdfrac, fast=False):
 	
